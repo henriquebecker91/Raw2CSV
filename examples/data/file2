@@ -1,0 +1,7 @@
+output_filename = file2
+blablabla
+only_in_1_and_2 = 2
+String fields like in_all may quoted or not. In the CSV they will not have
+quotes. So they cannot have ';' inside them otherwise the CSV will be broken.
+in_all = "B"
+float_data = 2.0

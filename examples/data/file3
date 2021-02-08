@@ -1,0 +1,5 @@
+The order of the fields does not matter, in this file the order is reversed
+in relation to the other two.
+float_data = 3.0
+in_all = C
+output_filename = file3

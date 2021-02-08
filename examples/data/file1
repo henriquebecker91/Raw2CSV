@@ -1,0 +1,9 @@
+output_filename = file1
+Text between fields does not matter.
+No matter how many lines.
+only_in_1_and_2 = 1
+The only thing that matter, is that a field name is written right, that
+there is one space on each side of '=', and that the value of the field
+is in the same line and does not have linebreaks.
+in_all = A
+float_data = 1.0
