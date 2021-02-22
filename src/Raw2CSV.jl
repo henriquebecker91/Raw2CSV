@@ -67,7 +67,7 @@ function gather_csv_from_folders(
 	column_names = first.(names_and_extractors)
 	extractors = last.(names_and_extractors)
 	return gather_csv_from_folders(
-		folder_name, extractors; delim = delim, column_names = column_names
+		folders_name, extractors; delim = delim, column_names = column_names
 	)
 end
 
