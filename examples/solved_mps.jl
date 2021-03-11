@@ -61,12 +61,19 @@ csv = gather_csv_from_folders(
 		key_equals("primal_status", not_found("primal_status")),
 		key_equals("dual_status", not_found("dual_status")),
 		key_equals("simplex_iterations", -1.0),
+		key_equals("barrier_iterations", -1.0),
 		key_equals("number_of_variables", -1),
 		key_equals("number_of_constraints", -1),
 		key_equals("objective_bound", NaN),
 		key_equals("objective_value", NaN),
 		key_equals("dual_objective_value", NaN),
-		key_equals("solve_time", NaN)
+		key_equals("solve_time", NaN),
+		key_equals("node_count", NaN), # uses float because it may be very large
+		key_equals("relative_gap", NaN),
+		# Unfortunately, many MPS were solved without exception catching and
+		# without writing this field, so `true` implies we are 100% sure
+		# an exception happened, but false does not guarantee no exaception.
+		#key_equals("run_ended_by_exception", false),
 	])
 )
 print(csv)
