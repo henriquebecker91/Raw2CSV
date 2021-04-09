@@ -72,8 +72,8 @@ csv = gather_csv_from_folders(
 		key_equals("relative_gap", NaN),
 		# Unfortunately, many MPS were solved without exception catching and
 		# without writing this field, so `true` implies we are 100% sure
-		# an exception happened, but false does not guarantee no exaception.
-		#key_equals("run_ended_by_exception", false),
+		# an exception happened, but false means nothing.
+		key_equals("exception_detected", false),
 	])
 )
 print(csv)

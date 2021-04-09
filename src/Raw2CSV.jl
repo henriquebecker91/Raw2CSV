@@ -39,11 +39,34 @@ function _data2csv(
 	return csv_str
 end
 
+function gather_csv_from_files(
+	files :: AbstractVector{<:AbstractString},
+	@nospecialize(extractors);
+	delim = ';'
+) :: String
+	if !ismissing(column_names)
+		@assert length(column_names) == length(extractors)
+	end
+	data = gather_data_from_files(files, extractors)
+	return _data2csv(data, delim, column_names)
+end
+
+function gather_csv_from_files(
+	files :: AbstractVector{<:AbstractString},
+	@nospecialize(names_and_extractors :: Vector{T});
+	delim = ';', column_names = missing
+) :: String where {T}
+	column_names = first.(names_and_extractors)
+	extractors = last.(names_and_extractors)
+	data = gather_data_from_files(files, extractors)
+	return _data2csv(data, delim, column_names)
+end
+
 function gather_csv_from_folders(
 	folders_name :: AbstractVector{<:AbstractString},
 	@nospecialize(extractors);
 	delim = ';', column_names = missing
-) :: String
+) :: String where {T}
 	if !ismissing(column_names)
 		@assert length(column_names) == length(extractors)
 	end
@@ -112,6 +135,23 @@ end
 
 struct NoDefault{T} end
 
+struct WrappedExtractor{F, E}
+	f :: F # Anything that can be called passing the type returned by extractor.
+	extractor :: E # Anything that can be called passing an AbstractString.
+end
+
+function (we::WrappedExtractor{F, E})(data :: AbstractString) where {F, E}
+	return we.f(we.extractor(data))
+end
+
+function wrap(f, extractor)
+	return WrappedExtractor(f, extractor)
+end
+
+function wrap(f, we :: WrappedExtractor{F, E}) where {F, E}
+	return WrappedExtractor(f ∘ we.f, we.extractor)
+end
+
 struct RegexExtractor{T}
 	regex :: Regex
 	default :: Union{T, NoDefault{T}}
@@ -138,6 +178,12 @@ function key_equals(
 	key :: AbstractString, default :: Union{T, NoDefault{T}}
 ) where {T}
 	return (key, key_equals_extractor(key, default))
+end
+
+function p_args_key(
+	key :: AbstractString, default :: Union{T, NoDefault{T}}
+) where {T}
+	return (key, p_args_key_extractor(key, default))
 end
 
 function p_args_key_extractor(

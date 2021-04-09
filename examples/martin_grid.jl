@@ -6,13 +6,12 @@ exec julia --project=@. --compile=min -O0 --startup-file=no -e "include(popfirst
 
 using Raw2CSV
 
-if !isone(length(ARGS))
-	println("usage: ./martin_grid.jl <path_to_folder_with_grid_outputs>")
-	println("Note: the script will consider every file inside the folder.")
+if isempty(ARGS)
+	println("usage: ./$PROGRAM_FILE <list of all files>")
 	exit()
 end
 
-csv = gather_csv_from_folder(ARGS[1], [
+csv = gather_csv_from_files(ARGS, [
 	key_equals("instancePath", NoDefault{String}()),
 	key_equals("instanceName", NoDefault{String}()),
 	key_equals("rotationOfItems", NoDefault{Int}()),
@@ -25,13 +24,6 @@ csv = gather_csv_from_folder(ARGS[1], [
 	key_equals("pointsY", 0),
 	key_equals("numberOfVariables", 0),
 	key_equals("numberOfConstraints", 0),
-	key_equals("ip_initial_value", 0),
-	key_equals("ip_solving_value", 0),
-	key_equals("lp_solving_value", 0.0),
-	key_equals("ip_solving_upperbound", 0.0),
-	key_equals("ip_solving_gap", 0.0),
-	key_equals("ip_solving_time", 0.0),
-	key_equals("lp_solving_time", 0.0),
 	key_equals("preprocessing_time", 0.0),
 	key_equals("model_building_time", 0.0),
 ])

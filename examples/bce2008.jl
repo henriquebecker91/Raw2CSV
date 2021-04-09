@@ -21,7 +21,6 @@ csv = gather_csv_from_files(ARGS, [
 	key_equals("numberItemTypes", 0),
 	key_equals("numberCopies", 0),
 	key_equals("boxesPattern", 0),
-	key_equals("treeSize", 0),
 	key_equals("numberOfVariables", 0),
 	key_equals("numberOfConstraints", 0),
 	key_equals("preprocessing_time", 0.0),
