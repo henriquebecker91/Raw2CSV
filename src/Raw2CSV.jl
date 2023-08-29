@@ -53,9 +53,9 @@ end
 
 function gather_csv_from_files(
 	files :: AbstractVector{<:AbstractString},
-	@nospecialize(names_and_extractors :: Vector{T});
+	@nospecialize(names_and_extractors :: Vector{Tuple{T, S}});
 	delim = ';', column_names = missing
-) :: String where {T}
+) :: String where {T, S}
 	column_names = first.(names_and_extractors)
 	extractors = last.(names_and_extractors)
 	data = gather_data_from_files(files, extractors)
@@ -258,18 +258,20 @@ function (rnse::RootNodeStatsExtractor)(
 	# in this segment does not match the RNStat enum.
 	barrier_log = "^Barrier solved model in (\\d+) iterations and (\\S+) " *
 		"seconds\nOptimal objective (\\S+)"
+	# If the barrier reaches time limit the string is slightly different
+	barrier_time_limit_log = "^Barrier performed (\\d+) iterations in (\\S+) seconds"
 	# The order of captures in the line below match the enum RNStat.
 	root_rel = "^Root relaxation: (?:objective (\\S+)|cutoff), (\\d+) " *
 		"iterations, (\\S+) seconds"
-	either_line = "(?:$barrier_log|$root_rel)"
+	either_line = "(?:$barrier_log|$root_rel|$barrier_time_limit_log)"
 	r = Regex(either_line, "m")
 	m = match(r, log)
 	if nothing === m
 		return (NaN, -1, NaN)[rnse.stat]
 	else
-		@assert 6 == length(m.captures)
-		# If there is no barrie line.
-		if isnothing(match(r"^Barrier solved model"m, m.match))
+		@assert 8 == length(m.captures)
+		# If there is no barrier line.
+		if isnothing(match(r"^Barrier"m, m.match))
 			# A capture has index i if it is the i-esim capture to appear in the
 			# string, even if previous captures cannot coexist with the current
 			# one (i.e., one is before a '|' inside a group and the other after).
@@ -289,13 +291,52 @@ function (rnse::RootNodeStatsExtractor)(
 				return NaN
 			end
 			return parse((Float64, Int, Float64)[rnse.stat], m.captures[idx])
-		else # If there is a barrier line.
-			@assert m.captures[[4, 5, 6]] == [nothing, nothing, nothing]
+		elseif !isnothing(match(r"^Barrier solved"m, m.match)) # If not barrier time limit.
+			@assert m.captures[4:8] == repeat([nothing], 5)
 			# The enumeration has not the right order in this line.
-			idx :: Int = rnse.stat == Iterations ? 1 : rnse.stat == Time ? 2 : 3
+			idx = rnse.stat == Iterations ? 1 : rnse.stat == Time ? 2 : 3
 			return parse((Int, Float64, Float64)[idx], m.captures[idx])
+		else # If barrier had time limit.
+			@assert m.captures[1:6] == repeat([nothing], 6)
+			# The enumeration has not the right order in this line.
+			idx = rnse.stat == Iterations ? 1 : rnse.stat == Time ? 2 : 3
+			# Note the solution is always NaN if timeout.
+			return parse((Int, Float64, Float64)[idx], vcat(m.captures[7:8], "NaN")[idx])
 		end
 	end
+end
+
+# Gets the nonzero amount from "Optimize a model with X rows, Y columns and
+# Z nonzeros", this is the amount before any presolve. As multiple models
+# may be solved inside the same log, needs the X in the "MARK_X" that comes
+# at the start of the solving section.
+struct GurobiNonzerosExtractor
+	marker :: String
+end
+
+function (rnse::GurobiNonzerosExtractor)(
+	log :: AbstractString
+) :: Int
+	marker = "MARK_" * rnse.marker
+	# First, let us restrict the log to the part after our marker and before the
+	# next marker (if there is one, otherwise until the end of the input).
+	all_markers_positions = findall(r"^MARK_.+$"m, log)
+	all_markers = getindex.(log, all_markers_positions)
+	our_marker_idx = findfirst(isequal(marker), all_markers)
+	isnothing(our_marker_idx) && return -1
+	first_byte = first(all_markers_positions[our_marker_idx])
+	if our_marker_idx == length(all_markers)
+		# If it is the last marker, just go from there to the end of the string.
+		final_byte = length(log)
+	else
+		# If it is not the last marker, get from there to the start of the next.
+		# The final byte is always an 'M' character in this case.
+		final_byte = first(all_markers_positions[our_marker_idx + 1])
+	end
+	log = log[first_byte:final_byte]
+	r = r"Optimize a model with [0-9]+ rows, [0-9]+ columns and ([0-9]+) nonzeros"
+	m = match(r, log)
+	return m === nothing ? -1 : parse(Int, m.captures[1])
 end
 
 # ==================== EXPORT EVERYTHING ====================

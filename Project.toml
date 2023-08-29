@@ -1,7 +1,7 @@
 name = "Raw2CSV"
 uuid = "10db5394-6fb8-4366-bb28-af2089be88a3"
 authors = ["Henrique Becker <henriquebecker91@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
